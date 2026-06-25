@@ -19,9 +19,11 @@ class LinktrOneController extends Controller
         $style = LinktrUserStyle::firstOrCreate(['user_id' => $user->id]);
         $shareCard = LinktrShareCard::firstOrCreate(['user_id' => $user->id]);
         $categories = LinktrCategory::where('user_id', $user->id)->orderBy('sort_order')->get();
+        $links = Link::where('user_id', $user->id)->orderBy('up_link', 'asc')->orderBy('order', 'asc')->get();
         $fonts = config('linktr_fonts', []);
+        $iconPresets = config('linktr_icons', []);
 
-        return view('studio.linktr-one.settings', compact('user', 'style', 'shareCard', 'categories', 'fonts'));
+        return view('studio.linktr-one.settings', compact('user', 'style', 'shareCard', 'categories', 'links', 'fonts', 'iconPresets'));
     }
 
     public function updateStyle(Request $request)
@@ -135,7 +137,7 @@ class LinktrOneController extends Controller
         $data = $request->validate([
             'linktr_category_id' => ['nullable', 'integer', Rule::exists('linktr_categories', 'id')->where('user_id', Auth::id())],
             'linktr_icon_mode' => ['required', Rule::in(['preset', 'upload', 'none'])],
-            'linktr_icon_preset' => ['nullable', 'max:80'],
+            'linktr_icon_preset' => ['nullable', Rule::in(array_keys(config('linktr_icons', [])))],
             'linktr_icon_bg_color' => ['nullable', 'max:40'],
             'linktr_button_bg_color' => ['nullable', 'max:40'],
             'linktr_button_text_color' => ['nullable', 'max:40'],
