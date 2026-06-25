@@ -89,6 +89,25 @@ class LinktrOneController extends Controller
         return back()->with('success', 'Category saved.');
     }
 
+    public function seedDefaultCategories()
+    {
+        $userId = Auth::id();
+        $defaults = [
+            ['title' => 'Social Media', 'subtitle' => '社交媒体', 'display_title' => 'Social Media | 社交媒体', 'sort_order' => 10],
+            ['title' => 'Video Preview', 'subtitle' => '福利频道', 'display_title' => 'Video Preview | 福利频道', 'sort_order' => 20],
+            ['title' => 'Payment', 'subtitle' => '付款订阅', 'display_title' => 'Payment | 付款订阅', 'sort_order' => 30],
+        ];
+
+        foreach ($defaults as $category) {
+            LinktrCategory::firstOrCreate(
+                ['user_id' => $userId, 'display_title' => $category['display_title']],
+                array_merge($category, ['user_id' => $userId, 'is_visible' => true])
+            );
+        }
+
+        return back()->with('success', 'Default Linktr categories created.');
+    }
+
     public function deleteCategory($id)
     {
         $category = LinktrCategory::where('user_id', Auth::id())->where('id', $id)->firstOrFail();
