@@ -1,6 +1,14 @@
 @extends('layouts.sidebar')
 
 @section('content')
+@php
+    $telegramImage = $shareCard->telegram_image_path ?: $shareCard->og_image_path;
+    $telegramImageUrl = $telegramImage ? url(ltrim($telegramImage, '/')) : asset('assets/linkstack/images/logo.svg');
+    $telegramDomain = $shareCard->telegram_domain_text ?: parse_url(url(''), PHP_URL_HOST);
+    $telegramTitle = $shareCard->telegram_title ?: ($shareCard->og_title ?: $user->name);
+    $telegramDescription = $shareCard->telegram_description ?: ($shareCard->og_description ?: strip_tags($user->littlelink_description));
+@endphp
+
 <div class="container-fluid">
     <h1 class="mb-4">Linktr One 设置</h1>
 
@@ -144,6 +152,90 @@
     </div>
 
     <div class="card mb-4">
+        <div class="card-header"><strong>链接入口增强：分类 / 图标 / 按钮颜色</strong></div>
+        <div class="card-body">
+            @if($links->count() === 0)
+                <p class="text-muted mb-0">暂无链接。请先到「Links」添加链接入口。</p>
+            @endif
+
+            @foreach($links as $link)
+                @if(($link->type ?? '') !== 'icon')
+                    <form class="border rounded p-3 mb-3" method="post" action="{{ route('linktr.one.link.update', $link->id) }}" enctype="multipart/form-data">
+                        @csrf
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <strong>{{ $link->title }}</strong>
+                                <div class="text-muted small">{{ $link->link }}</div>
+                            </div>
+                            @if(!empty($link->linktr_icon_path))
+                                <img src="{{ url(ltrim($link->linktr_icon_path, '/')) }}" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover;">
+                            @endif
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label>所属分类</label>
+                                <select class="form-control" name="linktr_category_id">
+                                    <option value="">无分类</option>
+                                    @foreach($categories as $category)
+                                        <option value="{{ $category->id }}" @selected($link->linktr_category_id == $category->id)>{{ $category->resolved_title }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label>图标模式</label>
+                                <select class="form-control" name="linktr_icon_mode">
+                                    <option value="preset" @selected(($link->linktr_icon_mode ?? 'preset') === 'preset')>预设图标</option>
+                                    <option value="upload" @selected(($link->linktr_icon_mode ?? '') === 'upload')>上传图标</option>
+                                    <option value="none" @selected(($link->linktr_icon_mode ?? '') === 'none')>不显示图标</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label>预设图标</label>
+                                <select class="form-control" name="linktr_icon_preset">
+                                    <option value="">默认</option>
+                                    @foreach($iconPresets as $key => $preset)
+                                        <option value="{{ $key }}" @selected(($link->linktr_icon_preset ?? '') === $key)>{{ $preset['label'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label>上传图标</label>
+                                <input type="file" class="form-control" name="linktr_icon">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label>图标背景色</label>
+                                <input type="text" class="form-control" name="linktr_icon_bg_color" value="{{ $link->linktr_icon_bg_color }}" placeholder="rgba(239,166,190,.26)">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label>按钮背景色</label>
+                                <input type="text" class="form-control" name="linktr_button_bg_color" value="{{ $link->linktr_button_bg_color }}" placeholder="#ffffff">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label>按钮文字颜色</label>
+                                <input type="text" class="form-control" name="linktr_button_text_color" value="{{ $link->linktr_button_text_color }}" placeholder="#513246">
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <label class="d-block">状态</label>
+                                <input type="hidden" name="linktr_is_visible" value="0">
+                                <input type="hidden" name="linktr_open_new_tab" value="0">
+                                <input type="hidden" name="linktr_nofollow" value="0">
+                                <label class="mr-2"><input type="checkbox" name="linktr_is_visible" value="1" @checked($link->linktr_is_visible ?? true)> 显示</label>
+                                <label class="mr-2"><input type="checkbox" name="linktr_open_new_tab" value="1" @checked($link->linktr_open_new_tab ?? true)> 新窗口</label>
+                                <label><input type="checkbox" name="linktr_nofollow" value="1" @checked($link->linktr_nofollow ?? true)> nofollow</label>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-sm">保存这个链接入口</button>
+                    </form>
+                @endif
+            @endforeach
+        </div>
+    </div>
+
+    <div class="card mb-4">
         <div class="card-header"><strong>X / Telegram 分享卡片</strong></div>
         <div class="card-body">
             <form method="post" action="{{ route('linktr.one.share-card.update') }}" enctype="multipart/form-data">
@@ -173,6 +265,19 @@
                 <div class="mb-3"><label>Telegram 描述</label><textarea class="form-control" name="telegram_description">{{ $shareCard->telegram_description }}</textarea></div>
                 <button class="btn btn-primary">保存分享卡片</button>
             </form>
+
+            <div class="mt-4">
+                <h5>Telegram 卡片仿真预览</h5>
+                <div style="width:min(100%,557px);min-height:146px;border:1px solid #cfdce5;border-radius:14px;background:#f8fbfc;display:grid;grid-template-columns:140px 1fr;overflow:hidden;">
+                    <img src="{{ $telegramImageUrl }}" alt="" style="width:140px;height:140px;object-fit:cover;margin:3px;border-radius:10px;">
+                    <div style="padding:12px 14px;color:#1f2933;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+                        <div style="color:#6b7c8f;font-size:13px;margin-bottom:5px;">{{ $telegramDomain }}</div>
+                        <div style="font-weight:700;font-size:15px;line-height:1.35;margin-bottom:6px;">{{ $telegramTitle }}</div>
+                        <div style="color:#536170;font-size:13px;line-height:1.35;">{{ $telegramDescription }}</div>
+                    </div>
+                </div>
+                <p class="text-muted small mt-2 mb-0">说明：真实 X / Telegram 客户端卡片布局由平台控制；这里用于模拟你截图中的卡片视觉。</p>
+            </div>
         </div>
     </div>
 </div>
