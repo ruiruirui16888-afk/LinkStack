@@ -1,77 +1,141 @@
-<?php use App\Models\UserData; ?>
+<?php
+use App\Models\LinktrCategory;
+use App\Models\UserData;
+use Illuminate\Support\Facades\Schema;
+?>
 
-        @php 
-        $initial = 1; 
+@php
+    $initial = 1;
+    $hasLinktrTables = Schema::hasTable('linktr_categories');
+    $buttonLinks = collect($links)->filter(function ($link) {
+        if (($link->name ?? '') === 'icon') {
+            return false;
+        }
+        if (isset($link->linktr_is_visible) && !$link->linktr_is_visible) {
+            return false;
+        }
+        return true;
+    });
+
+    $categories = collect();
+    if ($hasLinktrTables) {
+        $categories = LinktrCategory::where('user_id', $userinfo->id)
+            ->where('is_visible', true)
+            ->orderBy('sort_order')
+            ->get();
+    }
+
+    $presetIconClass = function ($preset, $buttonName) {
+        $key = $preset ?: $buttonName;
+        $map = [
+            'x' => 'fa-brands fa-x-twitter',
+            'twitter' => 'fa-brands fa-x-twitter',
+            'x-twitter' => 'fa-brands fa-x-twitter',
+            'telegram' => 'fa-brands fa-telegram',
+            'instagram' => 'fa-brands fa-instagram',
+            'youtube' => 'fa-brands fa-youtube',
+            'website' => 'fa-solid fa-link',
+            'link' => 'fa-solid fa-link',
+            'cloud' => 'fa-solid fa-cloud',
+            'payment' => 'fa-solid fa-credit-card',
+            'star' => 'fa-solid fa-star',
+            'heart' => 'fa-solid fa-heart',
+            'lock' => 'fa-solid fa-lock',
+        ];
+        return $map[$key] ?? ('fa-solid fa-link');
+    };
+
+    $renderLinktrButton = function ($link) use (&$initial, $presetIconClass, $userinfo) {
+        $target = isset($link->linktr_open_new_tab) ? (bool) $link->linktr_open_new_tab : (UserData::getData($userinfo->id, 'links-new-tab') != false);
+        $nofollow = isset($link->linktr_nofollow) ? (bool) $link->linktr_nofollow : true;
+        $rel = $nofollow ? 'noopener noreferrer nofollow noindex' : 'noopener noreferrer';
+        $buttonStyle = '';
+        if (!empty($link->linktr_button_bg_color)) {
+            $buttonStyle .= '--linktr-button-bg:' . e($link->linktr_button_bg_color) . ';';
+        }
+        if (!empty($link->linktr_button_text_color)) {
+            $buttonStyle .= '--linktr-button-text-color:' . e($link->linktr_button_text_color) . ';';
+        }
+        $iconBg = !empty($link->linktr_icon_bg_color) ? 'background:' . e($link->linktr_icon_bg_color) . ';' : '';
+        $iconMode = $link->linktr_icon_mode ?? 'preset';
+        $iconHtml = '';
+        if ($iconMode === 'upload' && !empty($link->linktr_icon_path)) {
+            $iconHtml = '<img alt="" src="' . e(url(ltrim($link->linktr_icon_path, '/'))) . '">';
+        } elseif ($iconMode !== 'none') {
+            $iconHtml = '<i class="' . e($presetIconClass($link->linktr_icon_preset ?? null, $link->name ?? null)) . '"></i>';
+        }
+        $href = e($link->link);
+        $title = e($link->title);
+        $targetAttr = $target ? ' target="_blank"' : '';
+        $html = '<div style="--delay: ' . $initial++ . 's" class="button-entrance linktr-button-wrap">';
+        $html .= '<a id="' . e($link->id) . '" class="button-click linktr-button" style="' . $buttonStyle . '" rel="' . $rel . '" href="' . $href . '"' . $targetAttr . '>';
+        $html .= '<span class="linktr-button-icon" style="' . $iconBg . '">' . $iconHtml . '</span>';
+        $html .= '<span class="linktr-button-title">' . $title . '</span>';
+        $html .= '<span class="linktr-button-dots">•••</span>';
+        $html .= '</a></div>';
+        return $html;
+    };
+@endphp
+
+@include('linkstack.modules.block-libraries', ['links' => $links])
+
+@if($categories->count() > 0)
+    @foreach($categories as $category)
+        @php
+            $categoryLinks = $buttonLinks->where('linktr_category_id', $category->id);
         @endphp
-
-        @include('linkstack.modules.block-libraries', ['links' => $links])
-
-        @foreach($links as $link)
-        @if(isset($link->custom_html) && $link->custom_html)
-            @if(isset($link->ignore_container) && $link->ignore_container)
-            </div></div></div>
-            @endif
-                @php setBlockAssetContext($link->type); @endphp
-                @include('blocks::' . $link->type . '.display', ['link' => $link, 'initial' => $initial++])
-            @if(isset($link->ignore_container) && $link->ignore_container)
-            <div class="container"><div class="row"><div class="column">
-            @endif
-        @else
-            @switch($link->name)
-                @case('icon')
-                    @break
-                @case('vcard')
-                    <div style="--delay: {{ $initial++ }}s" class="button-entrance"><a id="{{ $link->id }}" class="button button-default button-click button-hover icon-hover" rel="noopener noreferrer nofollow noindex" href="{{ route('vcard') . '/' . $link->id }}"><img alt="{{ $link->name }}" class="icon hvr-icon" src="@if(theme('use_custom_icons') == "true"){{ url('themes/' . $GLOBALS['themeName'] . '/extra/custom-icons')}}/vcard{{theme('custom_icon_extension')}} @else{{ asset('\/assets/linkstack/icons\/')}}vcard.svg @endif"></i>{{ $link->title }}</a></div>
-                        @break
-                @case('phone')
-                <div style="--delay: {{ $initial++ }}s" class="button-entrance"><a id="{{ $link->id }}" class="button button-default button-click button-hover icon-hover" rel="noopener noreferrer nofollow noindex" href="{{ $link->link }}"><img alt="{{ $link->name }}" class="icon hvr-icon" src="@if(theme('use_custom_icons') == "true"){{ url('themes/' . $GLOBALS['themeName'] . '/extra/custom-icons')}}/phone{{theme('custom_icon_extension')}} @else{{ asset('\/assets/linkstack/icons\/')}}phone.svg @endif"></i>{{ $link->title }}</a></div>
-                    @break
-                @case('custom')
-                  @if($link->custom_css === "" or $link->custom_css === "NULL" or (theme('allow_custom_buttons') == "false"))
-                   <div style="--delay: {{ $initial++ }}s" class="button-entrance"><a id="{{ $link->id }}" class="button button-custom button-click button-hover icon-hover" rel="noopener noreferrer nofollow noindex" href="{{ $link->link }}" @if((UserData::getData($userinfo->id, 'links-new-tab') != false))target="_blank"@endif ><i style="color: {{$link->custom_icon}}" class="icon hvr-icon fa {{$link->custom_icon}}"></i>{{ $link->title }}</a></div>
-                      @break
-                   @elseif($link->custom_css != "")
-                   <div style="--delay: {{ $initial++ }}s" class="button-entrance"><a id="{{ $link->id }}" class="button button-custom button-click button-hover icon-hover" style="{{ $link->custom_css }}" rel="noopener noreferrer nofollow noindex" href="{{ $link->link }}" @if((UserData::getData($userinfo->id, 'links-new-tab') != false))target="_blank"@endif ><i style="color: {{$link->custom_icon}}" class="icon hvr-icon fa {{$link->custom_icon}}"></i>{{ $link->title }}</a></div>
-                      @break
-                    @endif
-                @case('custom_website')
-                   @if($link->custom_css === "" or $link->custom_css === "NULL" or (theme('allow_custom_buttons') == "false"))
-                     <div style="--delay: {{ $initial++ }}s" class="button-entrance"><a id="{{ $link->id }}" class="button button-custom_website button-click button-hover icon-hover" rel="noopener noreferrer nofollow noindex" href="{{ $link->link }}" @if((UserData::getData($userinfo->id, 'links-new-tab') != false))target="_blank"@endif ><img alt="{{ $link->name }}" class="icon hvr-icon" src="@if(file_exists(base_path("assets/favicon/icons/").localIcon($link->id))){{url('assets/favicon/icons/'.localIcon($link->id))}}@else{{getFavIcon($link->id)}}@endif" onerror="this.onerror=null; this.src='{{asset('assets/linkstack/icons/website.svg')}}';">{{ $link->title }}</a></div>
-                       @break
-                   @elseif($link->custom_css != "")
-                    <div style="--delay: {{ $initial++ }}s" class="button-entrance"><a id="{{ $link->id }}" class="button button-custom_website button-click button-hover icon-hover" style="{{ $link->custom_css }}" rel="noopener noreferrer nofollow noindex" href="{{ $link->link }}" @if((UserData::getData($userinfo->id, 'links-new-tab') != false))target="_blank"@endif ><img alt="{{ $link->name }}" class="icon hvr-icon" src="@if(file_exists(base_path("assets/favicon/icons/").localIcon($link->id))){{url('assets/favicon/icons/'.localIcon($link->id))}}@else{{getFavIcon($link->id)}}@endif" onerror="this.onerror=null; this.src='{{asset('assets/linkstack/icons/website.svg')}}';">{{ $link->title }}</a></div>
-                     @break
-                   @endif
-                   @default
-                <div style="--delay: {{ $initial++ }}s" class="button-entrance"><a id="{{ $link->id }}" class="button button-{{ $link->name }} button-click button-hover icon-hover" rel="noopener noreferrer nofollow noindex" href="{{ $link->link }}" @if((UserData::getData($userinfo->id, 'links-new-tab') != false))target="_blank"@endif ><img alt="{{ $link->name }}" class="icon hvr-icon" src="@if(theme('use_custom_icons') == "true"){{ url('themes/' . $GLOBALS['themeName'] . '/extra/custom-icons')}}/{{str_replace('default ','',$link->name)}}{{theme('custom_icon_extension')}} @else{{ asset('\/assets/linkstack/icons\/') . str_replace('default ','',$link->name) }}.svg @endif">{{ $link->title }}</a></div>
-            @endswitch
+        @if($categoryLinks->count() > 0)
+            <div class="linktr-category-title fadein">{{ $category->resolved_title }}</div>
+            @foreach($categoryLinks as $link)
+                @if(isset($link->custom_html) && $link->custom_html)
+                    @php setBlockAssetContext($link->type); @endphp
+                    @include('blocks::' . $link->type . '.display', ['link' => $link, 'initial' => $initial++])
+                @else
+                    {!! $renderLinktrButton($link) !!}
+                @endif
+            @endforeach
         @endif
     @endforeach
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            function handleClickOrTouch(event) {
-                if (event.target.classList.contains('button-click')) {
-                    var id = event.target.id;
-                    if (!sessionStorage.getItem('clicked-' + id)) {
-                        var url = '{{ route("clickNumber") }}/' + id;
-                        fetch(url, {
-                            method: 'GET',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                        });
-                        sessionStorage.setItem('clicked-' + id, 'true');
-                    }
-                }
+    @php $uncategorized = $buttonLinks->filter(fn($link) => empty($link->linktr_category_id)); @endphp
+    @if($uncategorized->count() > 0)
+        <div class="linktr-category-title fadein">Links | 链接入口</div>
+        @foreach($uncategorized as $link)
+            @if(isset($link->custom_html) && $link->custom_html)
+                @php setBlockAssetContext($link->type); @endphp
+                @include('blocks::' . $link->type . '.display', ['link' => $link, 'initial' => $initial++])
+            @else
+                {!! $renderLinktrButton($link) !!}
+            @endif
+        @endforeach
+    @endif
+@else
+    @foreach($buttonLinks as $link)
+        @if(isset($link->custom_html) && $link->custom_html)
+            @php setBlockAssetContext($link->type); @endphp
+            @include('blocks::' . $link->type . '.display', ['link' => $link, 'initial' => $initial++])
+        @else
+            {!! $renderLinktrButton($link) !!}
+        @endif
+    @endforeach
+@endif
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        function handleClickOrTouch(event) {
+            var target = event.target.closest('.button-click');
+            if (!target) return;
+            var id = target.id;
+            if (!sessionStorage.getItem('clicked-' + id)) {
+                var url = '{{ route("clickNumber") }}/' + id;
+                fetch(url, { method: 'GET', headers: { 'Content-Type': 'application/json' } });
+                sessionStorage.setItem('clicked-' + id, 'true');
             }
-    
-            document.addEventListener('mousedown', function (event) {
-                if (event.button === 0 || event.button === 1) {
-                    handleClickOrTouch(event);
-                }
-            });
-    
-            document.addEventListener('touchstart', handleClickOrTouch);
+        }
+
+        document.addEventListener('mousedown', function (event) {
+            if (event.button === 0 || event.button === 1) handleClickOrTouch(event);
         });
-    </script>
+        document.addEventListener('touchstart', handleClickOrTouch);
+    });
+</script>

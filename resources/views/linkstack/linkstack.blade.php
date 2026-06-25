@@ -10,6 +10,7 @@
         @foreach($information as $info)
             @include('linkstack.modules.theme')
         @endforeach
+        @include('linkstack.modules.linktr-one-ui')
     @endpush
 
     @push('linkstack-body-start')

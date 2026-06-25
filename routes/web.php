@@ -57,6 +57,7 @@ if(file_exists(base_path('INSTALLING')) or file_exists(base_path('INSTALLERLOCK'
 if(env('MAINTENANCE_MODE') != 'true'){
 
 require __DIR__.'/home.php';
+require __DIR__.'/linktr_one.php';
 
 //Redirect if no page URL is set
 Route::get('/@', function () {
