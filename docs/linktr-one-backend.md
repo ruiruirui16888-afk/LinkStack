@@ -1,6 +1,6 @@
 # Linktr One customization notes
 
-This branch adds the database, backend, and first public frontend foundation for the custom Linktr One build on top of LinkStack.
+This branch adds the database, backend, public frontend, navigation shortcut, and default category helpers for the custom Linktr One build on top of LinkStack.
 
 ## Backend phase
 
@@ -26,6 +26,13 @@ This branch adds the database, backend, and first public frontend foundation for
 - Footer is user-configurable and non-clickable.
 - Backend Linktr One settings page now includes link-level controls and a Telegram-card-style preview.
 
+## Navigation and defaults phase
+
+- Added a Linktr One shortcut into the dashboard sidebar through the shared notification/layout script stack.
+- Added a one-click default category template action in /studio/linktr-one.
+- Default categories created by the helper are Social Media, Video Preview, and Payment.
+- The default category helper uses first-or-create behavior, so existing default categories are not duplicated.
+
 ## Run after pulling this branch
 
 php artisan migrate
@@ -36,4 +43,4 @@ php artisan view:clear
 
 ## Next phase
 
-Improve navigation from the existing LinkStack sidebar into /studio/linktr-one, refine public theme details, and add default seed categories for new accounts if needed.
+Deploy to a test server, run migrations, create sample users, and test /yqk168 and /minaxx2002 pages in browser before merging into main.
