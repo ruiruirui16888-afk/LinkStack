@@ -117,7 +117,7 @@
     <div class="card mb-4">
         <div class="card-header"><strong>分类管理</strong></div>
         <div class="card-body">
-            <form method="post" action="{{ route('linktr.one.category.store') }}" class="mb-4">
+            <form method="post" action="{{ route('linktr.one.category.store') }}" class="mb-3">
                 @csrf
                 <div class="row">
                     <div class="col-md-3 mb-3"><input class="form-control" name="title" placeholder="Social Media"></div>
@@ -127,6 +127,11 @@
                     <div class="col-md-1 mb-3"><button class="btn btn-success w-100">新增</button></div>
                 </div>
                 <input type="hidden" name="is_visible" value="1">
+            </form>
+
+            <form method="post" action="{{ route('linktr.one.category.defaults') }}" class="mb-4" onsubmit="return confirm('创建默认分类模板？已存在的默认分类不会重复创建。')">
+                @csrf
+                <button class="btn btn-outline-primary btn-sm">一键创建默认分类：Social Media / Video Preview / Payment</button>
             </form>
 
             <table class="table table-bordered">
