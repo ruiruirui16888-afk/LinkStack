@@ -1,29 +1,39 @@
-# Linktr One backend phase
+# Linktr One customization notes
 
-This branch adds the database and backend foundation for the custom Linktr One build on top of LinkStack.
+This branch adds the database, backend, and first public frontend foundation for the custom Linktr One build on top of LinkStack.
 
-## Added
+## Backend phase
 
-- `config/linktr_fonts.php` with 40+ common Chinese and English font stacks.
-- `linktr_categories` table for per-user categories such as `Social Media | 社交媒体`.
-- `linktr_user_styles` table for per-user gradient background, fonts, colors, buttons, avatar radius, and footer text.
-- `linktr_share_cards` table for per-user Open Graph, X/Twitter Card, and Telegram preview settings.
-- Extra `links` table fields for category assignment, per-link icons, button colors, visibility, new-tab behavior, and nofollow behavior.
-- Eloquent models for `LinktrCategory`, `LinktrUserStyle`, and `LinktrShareCard`.
-- `LinktrOneController` with backend handlers for style, category, share-card, and link enhancement settings.
-- `routes/linktr_one.php` and route registration in `routes/web.php`.
-- First backend settings view at `/studio/linktr-one`.
+- Added 40+ common Chinese and English font stacks.
+- Added common preset icons for X, Telegram, Instagram, YouTube, cloud, payment, lock, and more.
+- Added per-user categories such as Social Media and 社交媒体.
+- Added per-user gradient background, fonts, colors, buttons, avatar radius, and footer text.
+- Added per-user Open Graph, X Card, and Telegram preview settings.
+- Extended links with category assignment, per-link icons, button colors, visibility, new-tab behavior, and nofollow behavior.
+- Added models for categories, user styles, and share cards.
+- Added LinktrOneController and backend route group.
+- Added backend settings view at /studio/linktr-one.
+
+## Frontend phase
+
+- Added public Linktr One style override module.
+- Public page now uses a centered avatar, name, bio, social icons, categorized sections, rounded buttons, left icon, right three-dot decoration, and non-clickable footer text.
+- Link buttons render inside user-defined categories when categories exist.
+- Each link can use an uploaded icon, a preset icon, or no icon.
+- Per-link button background and text colors are applied on the public page.
+- User-level gradient background, fonts, and colors are applied on the public page.
+- Metadata now prefers user-level OG and X Card settings and falls back to profile information.
+- Footer is user-configurable and non-clickable.
+- Backend Linktr One settings page now includes link-level controls and a Telegram-card-style preview.
 
 ## Run after pulling this branch
 
-```bash
 php artisan migrate
 php artisan storage:link
 php artisan config:clear
 php artisan route:clear
 php artisan view:clear
-```
 
 ## Next phase
 
-The next phase should connect these new backend settings to the public Linktr One theme and the existing link edit/list screens.
+Improve navigation from the existing LinkStack sidebar into /studio/linktr-one, refine public theme details, and add default seed categories for new accounts if needed.
