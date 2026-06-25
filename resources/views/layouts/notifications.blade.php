@@ -129,6 +129,30 @@ notification('', 'modal-1', __('messages.Your security is at risk!'), '<b>'.__('
 notification('hide-star-notification', 'modal-star', __('messages.Support Linkstack'), ''.__('messages.support.msg1').' <a target="_blank" href="https://github.com/linkstackorg/linkstack">'.__('messages.support.msg2').'</a>. '.__('messages.support.msg3').'<br><br>'.__('messages.support.msg4').' <a target="_blank" href="https://linkstack.org/donate">'.__('messages.support.msg5').'<br><br>'.__('messages.support.msg6').'');
 @endphp @endpush
 
+@push('sidebar-scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var menu = document.getElementById('sidebar-menu');
+    if (!menu || document.getElementById('linktr-one-menu')) return;
+
+    var linksItem = Array.prototype.slice.call(menu.querySelectorAll('a.nav-link')).find(function (item) {
+        return (item.getAttribute('href') || '').indexOf('/studio/links') !== -1;
+    });
+
+    var item = document.createElement('li');
+    item.className = 'nav-item';
+    item.id = 'linktr-one-menu';
+    item.innerHTML = '<a class="nav-link {{ Request::segment(2) == 'linktr-one' ? 'active' : '' }}" href="{{ url('/studio/linktr-one') }}"><i class="bi bi-stars"></i><span class="item-name">Linktr One</span></a>';
+
+    if (linksItem && linksItem.closest('li')) {
+        linksItem.closest('li').insertAdjacentElement('afterend', item);
+    } else {
+        menu.appendChild(item);
+    }
+});
+</script>
+@endpush
+
 @php 
 if(isset($_GET['dismiss'])) {
     $dismiss = $_GET['dismiss'];
